@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnkiAI Expert - Code & Deep Learning</title>
+    <!-- Scripts nécessaires (React, Tailwind, Lucide, Babel) -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-shadow { shadow-sm hover:shadow-xl transition-shadow duration-300; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Configuration simplifiée pour usage local (stockage dans le navigateur)
+        const App = () => {
+            const [inputText, setInputText] = useState('');
+            const [decks, setDecks] = useState(() => JSON.parse(localStorage.getItem('anki_decks') || '[]'));
+            const [generatedCards, setGeneratedCards] = useState([]);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [view, setView] = useState('input');
+            const [currentDeck, setCurrentDeck] = useState(null);
+            const [cardIndex, setCardIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+
+            // Sauvegarde automatique dans le navigateur
+            useEffect(() => {
+                localStorage.setItem('anki_decks', JSON.stringify(decks));
+            }, [decks]);
+
+            // Simulation de l'appel IA (À remplacer par votre clé API Gemini si usage hors interface locale)
+            const handleGenerate = async () => {
+                if (!inputText.trim()) return;
+                setIsGenerating(true);
+                
+                // Note: Dans une version autonome réelle, vous appelleriez l'API Gemini ici.
+                // Pour ce fichier, nous simulons la structure demandée.
+                setTimeout(() => {
+                    const mockCards = [
+                        { type: "code", question: "Dans un RecursiveCharacterTextSplitter, que contrôle le paramètre chunk_overlap ?", answer: "Il définit le nombre de caractères communs entre deux morceaux de texte consécutifs pour garder le contexte." },
+                        { type: "math", question: "Quelle est la formule de l'attention scalée (Scaled Dot-Product Attention) ?", answer: "$Attention(Q, K, V) = softmax(\\frac{QK^T}{\\sqrt{d_k}})V$" },
+                        { type: "concept", question: "Pourquoi utilise-t-on le masquage (Masking) dans le décodeur d'un Transformer ?", answer: "Pour empêcher le modèle de regarder les mots futurs lors de l'entraînement (prédiction auto-régressive)." }
+                    ];
+                    setGeneratedCards(mockCards);
+                    setIsGenerating(false);
+                    setView('preview');
+                }, 1500);
+            };
+
+            const saveNewDeck = () => {
+                const title = prompt("Nom du deck :", "Mon Nouveau Deck");
+                if (!title) return;
+                const newDeck = { id: Date.now(), title, cards: generatedCards, createdAt: new Date() };
+                setDecks([...decks, newDeck]);
+                setView('library');
+                setInputText('');
+            };
+
+            return (
+                <div className="min-h-screen">
+                    <header className="bg-white border-b p-4 sticky top-0 z-50">
+                        <div className="max-w-5xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('input')}>
+                                <div className="bg-indigo-600 p-2 rounded-lg text-white">
+                                    <i data-lucide="brain"></i>
+                                </div>
+                                <h1 className="text-xl font-extrabold tracking-tight">AnkiAI <span className="text-indigo-600">Expert</span></h1>
+                            </div>
+                            <div className="flex gap-4">
+                                <button onClick={() => setView('input')} className="text-sm font-bold text-slate-600 hover:text-indigo-600">Nouveau</button>
+                                <button onClick={() => setView('library')} className="text-sm font-bold text-slate-600 hover:text-indigo-600">Ma Bibliothèque ({decks.length})</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto p-6">
+                        {view === 'input' && (
+                            <div className="animate-in fade-in duration-500 space-y-6">
+                                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 italic">
+                                        <i data-lucide="plus-circle" className="text-indigo-600"></i> Collez votre code ou texte technique
+                                    </h2>
+                                    <textarea 
+                                        className="w-full h-80 p-6 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
+                                        placeholder="Collez ici votre code Python (ex: RAG) ou explications d'architectures IA..."
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                    />
+                                    <div className="mt-6 flex justify-end">
+                                        <button 
+                                            onClick={handleGenerate}
+                                            disabled={isGenerating}
+                                            className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                                        >
+                                            {isGenerating ? "Analyse IA..." : "Extraire les Flashcards"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'preview' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-2xl font-black">Vérification des cartes</h2>
+                                    <button onClick={saveNewDeck} className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold shadow-md">Enregistrer le Deck</button>
+                                </div>
+                                {generatedCards.map((card, i) => (
+                                    <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row gap-6">
+                                        <div className="md:w-1/2">
+                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Question</span>
+                                            <p className="font-bold text-slate-800">{card.question}</p>
+                                        </div>
+                                        <div className="md:w-1/2 border-l pl-6 border-slate-100">
+                                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Réponse</span>
+                                            <p className="text-slate-600">{card.answer}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {view === 'library' && (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {decks.length === 0 ? <p className="text-slate-400">Aucun deck. Commencez par créer !</p> : 
+                                decks.map(d => (
+                                    <div key={d.id} className="bg-white p-8 rounded-3xl border border-slate-200 hover:border-indigo-300 transition-all">
+                                        <h3 className="text-xl font-bold mb-4">{d.title}</h3>
+                                        <button 
+                                            onClick={() => { setCurrentDeck(d); setCardIndex(0); setView('study'); }}
+                                            className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-indigo-600 transition"
+                                        >
+                                            Réviser ({d.cards.length} cartes)
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {view === 'study' && currentDeck && (
+                            <div className="flex flex-col items-center gap-8">
+                                <div className="relative w-full max-w-lg h-96 perspective-1000 cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
+                                    <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+                                        <div className="absolute inset-0 bg-white rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center justify-center p-12 text-center backface-hidden">
+                                            <p className="text-2xl font-bold">{currentDeck.cards[cardIndex].question}</p>
+                                        </div>
+                                        <div className="absolute inset-0 bg-indigo-600 text-white rounded-[3rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center backface-hidden rotate-y-180">
+                                            <p className="text-xl font-medium">{currentDeck.cards[cardIndex].answer}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 w-full max-w-lg">
+                                    <button onClick={() => {setCardIndex(Math.max(0, cardIndex-1)); setIsFlipped(false)}} className="flex-1 bg-white border py-4 rounded-2xl font-bold">Précédent</button>
+                                    <button onClick={() => {if(cardIndex < currentDeck.cards.length-1){setCardIndex(cardIndex+1); setIsFlipped(false)}else{setView('library')}}} className="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100">Suivant</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Initialisation des icônes Lucide
+        setTimeout(() => lucide.createIcons(), 500);
+    </script>
+</body>
+</html>
